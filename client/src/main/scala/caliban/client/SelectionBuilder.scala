@@ -97,17 +97,20 @@ sealed trait SelectionBuilder[-Origin, +A] { self =>
    * Transforms a root selection into a GraphQL request.
    * @param useVariables if true, all arguments will be passed as variables (default: false)
    * @param queryName if specified, use the given query name
+   * @param directives a list of directives to be added to the query
    * @param dropNullInputValues if true, drop all null values from input object arguments (default: false)
    */
   def toGraphQL[A1 >: A, Origin1 <: Origin](
     useVariables: Boolean = false,
     queryName: Option[String] = None,
+    directives: List[Directive] = Nil,
     dropNullInputValues: Boolean = false
   )(implicit ev: IsOperation[Origin1]): GraphQLRequest = {
     val options                = caliban.client.RequestOptions(
       useVariables = useVariables,
       dropNullInputValues = dropNullInputValues,
       queryName = queryName,
+      directives = directives,
       operationName = ev.operationName
     )
     val (operation, variables) = RequestRenderer.render(toSelectionSet, Map.empty, options)
@@ -120,6 +123,7 @@ sealed trait SelectionBuilder[-Origin, +A] { self =>
    * @param uri the URL of the GraphQL server
    * @param useVariables if true, all arguments will be passed as variables (default: false)
    * @param queryName if specified, use the given query name
+   * @param directives a list of directives to be added to the query
    * @param dropNullInputValues if true, drop all null values from input object arguments (default: false)
    * @return an STTP request
    */
@@ -127,9 +131,10 @@ sealed trait SelectionBuilder[-Origin, +A] { self =>
     uri: Uri,
     useVariables: Boolean = false,
     queryName: Option[String] = None,
+    directives: List[Directive] = Nil,
     dropNullInputValues: Boolean = false
   )(implicit ev: IsOperation[Origin1]): Request[Either[CalibanClientError, A1]] =
-    toRequestWith[A1, Origin1](uri, useVariables, queryName, dropNullInputValues)((res, _, _) => res)(ev)
+    toRequestWith[A1, Origin1](uri, useVariables, queryName, directives, dropNullInputValues)((res, _, _) => res)(ev)
 
   /**
    * Transforms a root selection into an STTP request ready to be run.
@@ -137,6 +142,7 @@ sealed trait SelectionBuilder[-Origin, +A] { self =>
    * @param uri the URL of the GraphQL server
    * @param useVariables if true, all arguments will be passed as variables (default: false)
    * @param queryName if specified, use the given query name
+   * @param directives a list of directives to be added to the query
    * @param dropNullInputValues if true, drop all null values from input object arguments (default: false)
    * @return an STTP request
    */
@@ -144,13 +150,14 @@ sealed trait SelectionBuilder[-Origin, +A] { self =>
     uri: Uri,
     useVariables: Boolean = false,
     queryName: Option[String] = None,
+    directives: List[Directive] = Nil,
     dropNullInputValues: Boolean = false
   )(
     mapResponse: (A, List[GraphQLResponseError], Option[__ObjectValue]) => B
   )(implicit ev: IsOperation[Origin1]): Request[Either[CalibanClientError, B]] =
     basicRequest
       .post(uri)
-      .body(asJson(toGraphQL(useVariables, queryName, dropNullInputValues)))
+      .body(asJson(toGraphQL(useVariables, queryName, directives, dropNullInputValues)))
       .mapResponse(
         _.left
           .map(CommunicationError(_))

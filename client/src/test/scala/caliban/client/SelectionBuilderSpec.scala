@@ -155,7 +155,31 @@ object SelectionBuilderSpec extends ZIOSpecDefault {
         },
         test("query name") {
           val query = Queries.character("Amos Burton")(Character.name).toGraphQL(queryName = Some("GetCharacter"))
-          assertTrue(query.query == """query GetCharacter {character(name:"Amos Burton"){name}}""")
+          assertTrue(query.query == """query GetCharacter{character(name:"Amos Burton"){name}}""")
+        },
+        test("query name + directives") {
+          val GraphQLRequest(s, variables) = Queries
+            .character("Amos Burton")(Character.name)
+            .toGraphQL(
+              queryName = Some("GetCharacter"),
+              directives = List(Directive("yo", List(Argument("value", "what's up", "String!")))),
+              useVariables = false
+            )
+          assertTrue(s == """query GetCharacter @yo(value:"what's up"){character(name:"Amos Burton"){name}}""")
+        },
+        test("query name + directives + variables") {
+          val GraphQLRequest(s, variables) = Queries
+            .character("Amos Burton")(Character.name)
+            .toGraphQL(
+              queryName = Some("GetCharacter"),
+              directives = List(Directive("yo", List(Argument("value", "what's up", "String!")))),
+              useVariables = true
+            )
+          assertTrue(
+            s == """query GetCharacter ($name: String!,$value: String!) @yo(value:$value){character(name:"Amos Burton"){name}}"""
+          )
+          assertTrue(variables("name") == __StringValue("Amos Burton")) &&
+          assertTrue(variables("value") == __StringValue("what's up"))
         },
         test("pure fields") {
           val query = Queries.character("Amos Burton")(Character.name ~ SelectionBuilder.pure("Fake")).toGraphQL()
@@ -233,7 +257,7 @@ object SelectionBuilderSpec extends ZIOSpecDefault {
             )
 
           assertTrue(
-            query.query == """query GetCharacter ($name: String!){...QueryFrag}fragment QueryFrag on Query{character(name:$name){...CF}} fragment CF on Character{name role{__typename ... on Captain{shipName}}}""",
+            query.query == """query GetCharacter($name: String!){...QueryFrag}fragment QueryFrag on Query{character(name:$name){...CF}} fragment CF on Character{name role{__typename ... on Captain{shipName}}}""",
             query.variables == Map("name" -> __Value.__StringValue("Amos Burton"))
           )
         },

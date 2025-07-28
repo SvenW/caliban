@@ -11,12 +11,13 @@ private[client] case class RequestOptions(
   useVariables: Boolean,
   dropNullInputValues: Boolean,
   operationName: String,
-  queryName: Option[String]
+  queryName: Option[String],
+  directives: List[Directive]
 )
 
 private[client] object RequestRenderer
     extends Renderer[List[Selection], Map[String, (__Value, String)], RequestOptions] {
-  import caliban.client.SelectionRenderer.{ selections, variablesRenderer }
+  import caliban.client.SelectionRenderer.{ directivesRenderer, selections, variablesRenderer }
   override def unsafeRender(a: List[Selection], state: State, writer: StringBuilder, options: RequestOptions): State = {
     val state0       = SelectionRenderer.RenderState(state, Set.empty)
     val inner        = new StringBuilder()
@@ -29,14 +30,17 @@ private[client] object RequestRenderer
     options.queryName.foreach { queryName =>
       writer.append(' ')
       writer.append(queryName)
-      writer.append(' ')
     }
     val state1 = selections.unsafeRender(a, state0, inner, innerOptions)
     val state2 = SelectionRenderer.fragments.unsafeRender(state1.fragments, state1, inner, innerOptions)
+    val state3 = if (options.directives.nonEmpty) {
+      writer.append(' ')
+      directivesRenderer.unsafeRender(options.directives, state2, writer, innerOptions)
+    } else state2
 
-    variablesRenderer.unsafeRender(state2.variables, (), writer, innerOptions)
+    variablesRenderer.unsafeRender(state3.variables, (), writer, innerOptions)
     writer.append(inner)
-    state2.variables
+    state3.variables
   }
 }
 
@@ -254,7 +258,7 @@ private[client] object SelectionRenderer {
       }
     }
 
-  private lazy val directivesRenderer =
+  lazy val directivesRenderer =
     list(directiveRenderer, ' ')
 
   private lazy val directiveRenderer: SelectionRenderer[Directive] =
