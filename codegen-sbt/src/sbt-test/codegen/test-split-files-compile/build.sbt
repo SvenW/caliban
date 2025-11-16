@@ -10,8 +10,7 @@ lazy val root = project
     ),
     Compile / caliban / calibanSettings ++= Seq(
       calibanSetting(file("src/main/graphql/schema.graphql"))( // Explicitly constrain to disambiguate
-        _.clientName("Client")
-          .splitFiles(true)
+        _.splitFiles(true)
       )
     )
   )

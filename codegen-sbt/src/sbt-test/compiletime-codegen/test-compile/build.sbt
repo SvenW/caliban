@@ -3,7 +3,7 @@ import sbt.librarymanagement.Resolver
 
 val scala212 = "2.12.20"
 val scala213 = "2.13.16"
-val scala3   = "3.3.6"
+val scala3   = "3.3.7"
 val allScala = Seq(scala212, scala213, scala3)
 
 def scalaDefaultVersion: String =
@@ -20,7 +20,6 @@ ThisBuild / licenses           := List("Apache-2.0" -> url("http://www.apache.or
 ThisBuild / version            := "0.0.1"
 ThisBuild / scalaVersion       := scalaDefaultVersion
 ThisBuild / resolvers += Resolver.mavenLocal
-ThisBuild / resolvers += Resolver.sonatypeRepo("snapshots")
 ThisBuild / scalacOptions ++= Seq("-Xfatal-warnings", "-feature")
 ThisBuild / crossScalaVersions := allScala
 
