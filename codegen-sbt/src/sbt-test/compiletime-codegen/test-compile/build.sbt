@@ -6,10 +6,11 @@ val scala213 = "2.13.18"
 val scala3   = "3.3.7"
 val allScala = Seq(scala212, scala213, scala3)
 
-def scalaDefaultVersion: String =
-  sys.props.get("plugin.version") match {
-    case Some("test-codegen-sbt-compile-scala3") => scala3
-    case _                                       => scala212
+def scalaDefaultVersion(sbtVersion: String): String =
+  (sys.props.get("plugin.version"), sbtVersion) match {
+    case (Some("test-codegen-sbt-compile-scala3"), _) => scala3
+    case (_, v) if v.startsWith("2.")                 => scala3
+    case _                                            => scala212
   }
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
@@ -18,9 +19,9 @@ ThisBuild / organization       := "Conduktor"
 ThisBuild / homepage           := Some(url("https://www.conduktor.io/"))
 ThisBuild / licenses           := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0"))
 ThisBuild / version            := "0.0.1"
-ThisBuild / scalaVersion       := scalaDefaultVersion
+ThisBuild / scalaVersion       := scalaDefaultVersion(sbtVersion.value)
 ThisBuild / resolvers += Resolver.mavenLocal
-ThisBuild / scalacOptions ++= Seq("-Xfatal-warnings", "-feature")
+ThisBuild / scalacOptions ~= (opts => (opts ++ Seq("-Xfatal-warnings", "-feature")).distinct)
 ThisBuild / crossScalaVersions := allScala
 
 // ### Dependencies ###
@@ -39,6 +40,28 @@ lazy val zioTest = Seq(
   "dev.zio" %% "zio-test"     % "2.1.9" % Test,
   "dev.zio" %% "zio-test-sbt" % "2.1.9" % Test
 )
+
+// ### sbt scripted helpers ###
+def globToMaybeFile(baseDir: File, glob: String): Option[File] = {
+  @annotation.tailrec
+  def go(acc: PathFinder, parts: List[String]): PathFinder =
+    parts match {
+      case Nil => acc
+      case "**" :: part :: rest => go(acc ** part, rest)
+      case part :: rest => go(acc / part, rest)
+    }
+
+  val files = go(baseDir, glob.split('/').toList).get()
+  assert(files.length <= 1, s"Multiple files found for glob '$glob':\n${files.mkString("\n")}")
+  files.headOption
+}
+
+def globToFile(baseDir: File, glob: String): File = {
+  val file = globToMaybeFile(baseDir, glob)
+  assert(file.isDefined, s"No files found for glob '$glob'")
+  file.get
+}
+
 // ### App Modules ###
 
 /**
@@ -60,9 +83,10 @@ lazy val root =
       // Additional scripted tests commands
       InputKey[Unit]("copy-file-with-options") := {
         val args: Vector[String] = spaceDelimited("<arg>").parsed.toVector
+        val baseDir = baseDirectory.value
 
         IO.copy(
-          List(file(args(3)) -> file(args(4))),
+          List(globToFile(baseDir, args(3)) -> file(args(4))),
           overwrite = args(0).toBoolean,
           preserveLastModified = args(1).toBoolean,
           preserveExecutable = args(2).toBoolean
@@ -81,6 +105,15 @@ lazy val root =
         val content    = IO.read(file(backupFile))
         val newContent = content.replace(previousValue, newValue)
         IO.write(file(initialFile), newContent)
+      },
+      InputKey[Unit]("check-file-newer") := {
+        val args: Vector[String] = spaceDelimited("<arg>").parsed.toVector
+        val baseDir = baseDirectory.value
+        val pathA = globToMaybeFile(baseDir, args(0))
+        val pathB = globToMaybeFile(baseDir, args(1))
+        val isNewer = pathA.isDefined &&
+          (!pathB.isDefined || IO.getModifiedTimeOrZero(pathA.get) > IO.getModifiedTimeOrZero(pathB.get))
+        assert(isNewer, s"${args(0)} is not newer than ${args(1)}")
       }
     )
 

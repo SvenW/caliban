@@ -1,8 +1,8 @@
 > compile
 
-$ exists target/scala-2.12/src_managed/main/caliban-codegen-sbt/caliban/Client.scala
-$ exists target/scala-2.12/src_managed/main/caliban-codegen-sbt/genview/Client.scala
-$ exists target/scala-2.12/src_managed/main/caliban-codegen-sbt/caliban/schema.scala
-$ exec sh verify.sh CharacterView target/scala-2.12/src_managed/main/caliban-codegen-sbt/genview/Client.scala
-$ exec sh verify.sh OptionView target/scala-2.12/src_managed/main/caliban-codegen-sbt/genview/Client.scala
-$ exec sh verify.sh CharacterOneOfInput target/scala-2.12/src_managed/main/caliban-codegen-sbt/genview/Client.scala
+$ exists target/**/src_managed/**/caliban-codegen-sbt/caliban/Client.scala
+$ exists target/**/src_managed/**/caliban-codegen-sbt/genview/Client.scala
+$ exists target/**/src_managed/**/caliban-codegen-sbt/caliban/schema.scala
+$ exec bash verify.sh CharacterView target/**/src_managed/**/caliban-codegen-sbt/genview/Client.scala
+$ exec bash verify.sh OptionView target/**/src_managed/**/caliban-codegen-sbt/genview/Client.scala
+$ exec bash verify.sh CharacterOneOfInput target/**/src_managed/**/caliban-codegen-sbt/genview/Client.scala
