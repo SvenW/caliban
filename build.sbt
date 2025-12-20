@@ -4,7 +4,7 @@ import sbtcrossproject.CrossPlugin.autoImport.{ crossProject, CrossType }
 import sbt.*
 import Keys.*
 
-val scala212     = "2.12.20"
+val scala212     = "2.12.21"
 val scala213     = "2.13.18"
 val scala3Lts    = "3.3.7"
 val scala3ForSbt = "3.7.4"
@@ -18,7 +18,7 @@ val circeVersion              = "0.14.15"
 val fs2Version                = "3.12.2"
 val http4sVersion             = "0.23.33"
 val javaTimeVersion           = "2.6.0"
-val jsoniterVersion           = "2.38.5"
+val jsoniterVersion           = "2.38.6"
 val laminextVersion           = "0.17.0"
 val magnoliaScala2Version     = "1.1.10"
 val magnoliaScala3Version     = "1.3.18"
@@ -27,15 +27,15 @@ val playVersion               = "3.0.9"
 val playJsonVersion           = "3.0.6"
 val scalafmtVersion           = "3.8.0"
 val sttpVersion               = "4.0.2"
-val tapirVersion              = "1.12.6"
+val tapirVersion              = "1.13.3"
 val zioVersion                = "2.1.23"
 val zioInteropCats2Version    = "22.0.0.0"
-val zioInteropCats3Version    = "23.1.0.11"
+val zioInteropCats3Version    = "23.1.0.12"
 val zioInteropReactiveVersion = "2.0.2"
 val zioConfigVersion          = "4.0.6"
 val zqueryVersion             = "0.7.7"
-val zioJsonVersion            = "0.7.45"
-val zioHttpVersion            = "3.7.1"
+val zioJsonVersion            = "0.8.0"
+val zioHttpVersion            = "3.7.4"
 val zioOpenTelemetryVersion   = "3.1.12"
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
@@ -280,7 +280,7 @@ lazy val tracing = project
       "dev.zio"         %% "zio-opentelemetry"         % zioOpenTelemetryVersion,
       "dev.zio"         %% "zio-test"                  % zioVersion % Test,
       "dev.zio"         %% "zio-test-sbt"              % zioVersion % Test,
-      "io.opentelemetry" % "opentelemetry-sdk-testing" % "1.56.0"   % Test
+      "io.opentelemetry" % "opentelemetry-sdk-testing" % "1.57.0"   % Test
     )
   )
   .dependsOn(core)
