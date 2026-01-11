@@ -110,6 +110,7 @@ If you have any specific server requirements or need to interop with other libra
 "com.github.ghostdogpr" %% "caliban-federation" % "3.0.0" // apollo federation
 "com.github.ghostdogpr" %% "caliban-reporting"  % "3.0.0" // apollo schema reporting
 "com.github.ghostdogpr" %% "caliban-tracing"    % "3.0.0" // open-telemetry
+"com.github.ghostdogpr" %% "caliban-stitching"  % "3.0.0" // stitching
 ```
 
 ## Where to go next?
