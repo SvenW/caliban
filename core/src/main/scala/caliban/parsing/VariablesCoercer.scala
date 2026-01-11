@@ -8,7 +8,7 @@ import caliban.parsing.adt.Type.{ ListType, NamedType }
 import caliban.parsing.adt._
 import caliban.schema.RootType
 import caliban.validation.Validator.failValidation
-import caliban.{ GraphQLRequest, InputValue, Value }
+import caliban.{ InputValue, Value }
 
 import scala.collection.compat._
 
@@ -16,22 +16,14 @@ object VariablesCoercer {
   import caliban.validation.ValidationOps._
 
   def coerceVariables(
-    req: GraphQLRequest,
-    doc: Document,
-    rootType: RootType,
-    skipValidation: Boolean
-  ): Either[ValidationError, GraphQLRequest] =
-    coerceVariables(req.variables.getOrElse(Map.empty), doc, rootType, skipValidation)
-      .map(m => req.copy(variables = Some(m)))
-
-  def coerceVariables(
     variables: Map[String, InputValue],
     doc: Document,
     rootType: RootType,
-    skipValidation: Boolean
+    skipValidation: Boolean,
+    operationName: Option[String]
   ): Either[ValidationError, Map[String, InputValue]] =
     try
-      coerceVariablesUnsafe(variables, doc, rootType, skipValidation)
+      coerceVariablesUnsafe(variables, doc, rootType, skipValidation, operationName)
     catch {
       case _: StackOverflowError => Left(ValidationError("max arguments depth exceeded", ""))
     }
@@ -40,12 +32,23 @@ object VariablesCoercer {
     variables: Map[String, InputValue],
     doc: Document,
     rootType: RootType,
-    skipValidation: Boolean
+    skipValidation: Boolean,
+    operationName: Option[String]
   ): Either[ValidationError, Map[String, InputValue]] = {
     // Scala 2's compiler loves inferring `ZPure.succeed` as ZPure[Nothing, Nothing, Any, R, E, A] so we help it out
     type F[+A] = Either[ValidationError, A]
 
-    val variableDefinitions = doc.operationDefinitions.flatMap(_.variableDefinitions)
+    // Only coerce variables for the operation being executed, not all operations in the document.
+    // Per the GraphQL spec: "Variables are scoped on a per-operation basis."
+    // See: https://spec.graphql.org/October2021/#sec-All-Variable-Uses-Defined
+    val variableDefinitions = operationName match {
+      case Some(name) =>
+        doc.operationDefinitions
+          .find(_.name.contains(name))
+          .fold(List.empty[VariableDefinition])(_.variableDefinitions)
+      case None       =>
+        doc.operationDefinitions.flatMap(_.variableDefinitions)
+    }
 
     if (variableDefinitions.isEmpty) Right(variables)
     else
